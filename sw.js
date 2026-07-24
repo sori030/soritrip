@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sori-trip-travel-kit-v29';
+const CACHE_NAME = 'sori-trip-travel-kit-v30';
 const APP_SHELL = [
   './',
   './index.html',
@@ -32,6 +32,13 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const requestUrl = new URL(event.request.url);
+  const sameOrigin = requestUrl.origin === self.location.origin;
+  // Supabase and CDN responses must stay network-first; caching them can hide shared updates.
+  if (!sameOrigin) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
   event.respondWith((async () => {
     const isAppShell = event.request.mode === 'navigate' || event.request.url.endsWith('/index.html');
     if (isAppShell) {
