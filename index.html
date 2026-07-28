@@ -47,6 +47,9 @@ h1{margin:14px 0 0;font-size:28px;line-height:1.02;letter-spacing:-1px}.meta{mar
 .check span{white-space:pre-wrap}
 .checkedit textarea{min-height:70px;resize:vertical;line-height:1.45}
 .addrow{align-items:start}
+.checkrow{gap:2px}
+.checkhandle,.checkmove,.removecheck{width:26px;height:28px}
+.checkeditactions{gap:3px}
 </style>
 </head>
 <body>
@@ -218,6 +221,92 @@ Checklist=function ChecklistWithMultilineText({trip,setTrip,newCheck,setNewCheck
         <label className={'check '+(c.done?'done':'')}><input type="checkbox" checked={c.done} onChange={e=>setTrip(t=>({...t,checklist:t.checklist.map(x=>x.id===c.id?{...x,done:e.target.checked}:x)}))}/><span>{c.text}</span></label>
         <button className="checkmove" type="button" aria-label={`${c.text} 위로 이동`} title="위로 이동" disabled={index===0} onClick={()=>move(c.id,-1)}>↑</button>
         <button className="checkmove" type="button" aria-label={`${c.text} 아래로 이동`} title="아래로 이동" disabled={index===items.length-1} onClick={()=>move(c.id,1)}>↓</button>
+        <button className="checkmove" type="button" aria-label={`${c.text} 수정`} title="수정" onClick={()=>startEdit(c)}>✎</button>
+        <button className="removecheck" type="button" aria-label={`${c.text} 삭제`} title="삭제" onClick={()=>remove(c.id)}>×</button>
+      </>}
+    </div>):<div className="emptycheck">이 구분에 아직 체크 항목이 없습니다.</div>}
+    <div className="addrow">
+      <textarea className="area" rows="2" value={newCheck} onChange={e=>setNewCheck(e.target.value)} onKeyDown={e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')add()}} placeholder={phase==='before'?'여행 전에 준비할 것을 입력하세요':'여행 중 확인할 것을 입력하세요'} aria-label="체크리스트 항목 추가" />
+      <button className="dark" onClick={add}>추가</button>
+    </div>
+  </section>;
+}
+
+Checklist=function ChecklistWithTouchHandle({trip,setTrip,newCheck,setNewCheck}){
+  const[phase,setPhase]=useState('before');
+  const[editing,setEditing]=useState(null);
+  const[editText,setEditText]=useState('');
+  const[dragId,setDragId]=useState(null);
+  const pointerDrag=useRef(null);
+  const items=trip.checklist.filter(c=>(c.phase||'before')===phase);
+  const add=()=>{
+    const text=newCheck.trim();
+    if(!text)return;
+    setTrip(t=>({...t,checklist:[...t.checklist,{id:id(),text,done:false,phase}]}));
+    setNewCheck('');
+  };
+  const remove=checkId=>setTrip(t=>({...t,checklist:t.checklist.filter(c=>c.id!==checkId)}));
+  const startEdit=c=>{setEditing(c.id);setEditText(c.text)};
+  const cancelEdit=()=>{setEditing(null);setEditText('')};
+  const saveEdit=()=>{
+    const text=editText.trim();
+    if(!editing||!text)return;
+    setTrip(t=>({...t,checklist:t.checklist.map(c=>c.id===editing?{...c,text}:c)}));
+    cancelEdit();
+  };
+  const reorder=(fromId,toId)=>{
+    if(!fromId||!toId||fromId===toId)return;
+    setTrip(t=>{
+      const phaseItems=t.checklist.filter(c=>(c.phase||'before')===phase);
+      const from=phaseItems.findIndex(c=>c.id===fromId);
+      const to=phaseItems.findIndex(c=>c.id===toId);
+      if(from<0||to<0)return t;
+      const reordered=[...phaseItems];
+      const[moved]=reordered.splice(from,1);
+      reordered.splice(to,0,moved);
+      let index=0;
+      return{...t,checklist:t.checklist.map(c=>(c.phase||'before')===phase?reordered[index++]:c)};
+    });
+  };
+  const beginPointerDrag=(e,checkId)=>{
+    if(e.pointerType==='mouse')return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    pointerDrag.current={id:checkId,pointerId:e.pointerId,lastTarget:checkId};
+    setDragId(checkId);
+  };
+  const updatePointerDrag=e=>{
+    const current=pointerDrag.current;
+    if(!current)return;
+    e.preventDefault();
+    const row=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('[data-check-id]');
+    const targetId=row?.getAttribute('data-check-id');
+    if(!targetId||targetId===current.id||targetId===current.lastTarget)return;
+    if(!items.some(item=>item.id===targetId))return;
+    reorder(current.id,targetId);
+    current.lastTarget=targetId;
+  };
+  const endPointerDrag=e=>{
+    const current=pointerDrag.current;
+    if(!current)return;
+    if(e.currentTarget.hasPointerCapture?.(current.pointerId))e.currentTarget.releasePointerCapture(current.pointerId);
+    pointerDrag.current=null;
+    setDragId(null);
+  };
+  return <section className="panel">
+    <h3>체크리스트</h3>
+    <p className="minor">여행 전 준비와 여행 중 확인할 일을 나눠서 적으세요. 항목 안에서는 줄바꿈도 사용할 수 있습니다.</p>
+    <div className="phasebar">
+      <button className={'phase '+(phase==='before'?'on':'')} onClick={()=>{setPhase('before');cancelEdit()}}>여행 전</button>
+      <button className={'phase '+(phase==='during'?'on':'')} onClick={()=>{setPhase('during');cancelEdit()}}>여행 중</button>
+    </div>
+    {items.length?items.map((c,index)=><div key={c.id} data-check-id={c.id} className={'checkrow '+(dragId===c.id?'dragging':'')} draggable={editing!==c.id} onDragStart={()=>setDragId(c.id)} onDragEnd={()=>setDragId(null)} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();reorder(dragId,c.id);setDragId(null)}}>
+      {editing===c.id?<div className="checkedit">
+        <textarea className="field" autoFocus value={editText} onChange={e=>setEditText(e.target.value)} onKeyDown={e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')saveEdit();if(e.key==='Escape')cancelEdit()}} aria-label="체크리스트 항목 수정" />
+        <div className="checkeditactions"><button className="savecheck" onClick={saveEdit}>저장</button><button onClick={cancelEdit}>취소</button></div>
+      </div>:<>
+        <button className="checkhandle" type="button" aria-label="길게 눌러 순서 이동" title="길게 눌러 순서 이동" onPointerDown={e=>beginPointerDrag(e,c.id)} onPointerMove={updatePointerDrag} onPointerUp={endPointerDrag} onPointerCancel={endPointerDrag}>⋮⋮</button>
+        <label className={'check '+(c.done?'done':'')}><input type="checkbox" checked={c.done} onChange={e=>setTrip(t=>({...t,checklist:t.checklist.map(x=>x.id===c.id?{...x,done:e.target.checked}:x)}))}/><span>{c.text}</span></label>
         <button className="checkmove" type="button" aria-label={`${c.text} 수정`} title="수정" onClick={()=>startEdit(c)}>✎</button>
         <button className="removecheck" type="button" aria-label={`${c.text} 삭제`} title="삭제" onClick={()=>remove(c.id)}>×</button>
       </>}
