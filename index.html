@@ -43,6 +43,11 @@ h1{margin:14px 0 0;font-size:28px;line-height:1.02;letter-spacing:-1px}.meta{mar
 .notice{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:12px}.next{margin-top:15px;padding:12px 13px;border-radius:14px;background:rgba(168,230,207,.16);border:1px solid rgba(168,230,207,.28)}.next b{display:block;color:var(--lime);font:800 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.75px;text-transform:uppercase}.next span{display:block;margin-top:6px;font-size:14px;line-height:1.35;font-weight:800}.minor{margin:0;color:var(--muted);font-size:12px;line-height:1.5}.toast{position:absolute;z-index:80;left:18px;right:18px;bottom:84px;background:var(--ink);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 10px 28px rgba(15,15,15,.25);font-size:13px;font-weight:750}.sheetback{position:absolute;inset:0;z-index:40;background:rgba(15,15,15,.36);display:flex;align-items:flex-end;justify-content:center;padding:12px;overflow-y:auto;overscroll-behavior:contain}.sheet{width:min(100%,620px);max-height:calc(100% - 24px);overflow-y:auto;background:var(--paper);border-radius:26px;padding:16px 18px calc(20px + var(--safe));box-shadow:0 -16px 60px rgba(15,15,15,.22);-webkit-overflow-scrolling:touch;overscroll-behavior:contain}@media(min-width:720px){.sheetback{align-items:center;padding:24px}.sheet{max-height:calc(100% - 48px);border-radius:28px}}
 .sheethead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.sheethead h2{margin:0;font-size:22px;line-height:1.15;letter-spacing:-.55px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.form{margin-bottom:10px}.label{display:block;margin:0 0 6px;color:var(--muted);font-size:11px;font-weight:850;letter-spacing:.5px;text-transform:uppercase}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.switches{display:grid;grid-template-columns:1fr 1fr;gap:8px}.toggle{border:1px solid var(--line);border-radius:14px;background:#fff;padding:11px 12px;text-align:left;font-weight:850;font-size:13px}.toggle.on{background:var(--accentSoft);border-color:var(--accentSoft);color:var(--accent)}
 </style>
+<style>
+.check span{white-space:pre-wrap}
+.checkedit textarea{min-height:70px;resize:vertical;line-height:1.45}
+.addrow{align-items:start}
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -156,6 +161,73 @@ function PlaceSheet({place,setPlace,save,del}){const up=(k,v)=>setPlace(p=>({...
 function TripSheet({trip,setTrip,close,share,exportTrip,importTrip}){const[d,setD]=useState(trip);const up=(k,v)=>setD(p=>({...p,[k]:v}));const upd=(idx,k,v)=>setD(p=>({...p,days:p.days.map(day=>day.idx===idx?{...day,[k]:v}:day)}));return <div className="sheetback"><div className="sheet"><div className="sheethead"><h2>여행 관리</h2><button className="icon" aria-label="닫기" onClick={close}>×</button></div><section className="panel"><h3>공유 및 백업</h3><p className="minor">공유 링크를 연 사람은 같은 계획을 자기 기기에 저장할 수 있습니다. 이후 수정 내용은 자동으로 서로 동기화되지 않습니다.</p><div className="actions"><button className="dark" onClick={share}>공유 링크 복사</button><button className="btn" onClick={exportTrip}>백업 파일 저장</button></div><label className="btn" style={{display:'flex',alignItems:'center',justifyContent:'center',marginTop:8,minHeight:43,cursor:'pointer'}}>백업 파일 불러오기<input type="file" accept="application/json" onChange={importTrip} style={{display:'none'}}/></label></section><Field label="여행명"><input className="field" value={d.destination} onChange={e=>up('destination',e.target.value)}/></Field><div className="grid"><Field label="날짜"><input className="field" value={d.dateLabel} onChange={e=>up('dateLabel',e.target.value)}/></Field><Field label="인원"><input className="field" value={d.companions} onChange={e=>up('companions',e.target.value)}/></Field></div>{d.days.map(day=><section className="panel" key={day.idx}><h3>DAY {day.idx}</h3><Field label="날짜 라벨"><input className="field" value={day.date} onChange={e=>upd(day.idx,'date',e.target.value)}/></Field><Field label="하루 주제"><input className="field" value={day.theme} onChange={e=>upd(day.idx,'theme',e.target.value)}/></Field></section>)}<button className="primary" style={{width:'100%'}} onClick={()=>{setTrip(d);close()}}>여행 정보 저장</button></div></div>}
 function IncomingSheet({trip,accept,close}){return <div className="sheetback"><div className="sheet"><div className="sheethead"><div><span className="pill">공유 받은 일정</span><h2 style={{marginTop:10}}>{trip.destination}</h2></div><button className="icon" aria-label="닫기" onClick={close}>×</button></div><p className="minor">{trip.dateLabel} · {trip.daysLabel} · {trip.companions}</p><div className="notice" style={{marginTop:14}}>이 계획을 저장하면 지금 이 브라우저에 있는 Sori Trip 일정은 공유 받은 내용으로 바뀝니다. 이 링크는 실시간 공동 편집 기능이 아닙니다.</div><div className="actions"><button className="btn" onClick={close}>나중에 보기</button><button className="primary" onClick={accept}>이 기기에 저장</button></div></div></div>}
 Checklist=function ChecklistByPhase({trip,setTrip,newCheck,setNewCheck}){const[phase,setPhase]=useState('before');const[editing,setEditing]=useState(null);const[editText,setEditText]=useState('');const[dragId,setDragId]=useState(null);const items=trip.checklist.filter(c=>(c.phase||'before')===phase);const add=()=>{const text=newCheck.trim();if(!text)return;setTrip(t=>({...t,checklist:[...t.checklist,{id:id(),text,done:false,phase}]}));setNewCheck('')};const remove=checkId=>setTrip(t=>({...t,checklist:t.checklist.filter(c=>c.id!==checkId)}));const startEdit=c=>{setEditing(c.id);setEditText(c.text)};const cancelEdit=()=>{setEditing(null);setEditText('')};const saveEdit=()=>{const text=editText.trim();if(!editing||!text)return;setTrip(t=>({...t,checklist:t.checklist.map(c=>c.id===editing?{...c,text}:c)}));cancelEdit()};const reorder=(fromId,toId)=>{if(!fromId||!toId||fromId===toId)return;setTrip(t=>{const phaseItems=t.checklist.filter(c=>(c.phase||'before')===phase);const from=phaseItems.findIndex(c=>c.id===fromId);const to=phaseItems.findIndex(c=>c.id===toId);if(from<0||to<0)return t;const reordered=[...phaseItems];const[moved]=reordered.splice(from,1);reordered.splice(to,0,moved);let index=0;return{...t,checklist:t.checklist.map(c=>(c.phase||'before')===phase?reordered[index++]:c)}})};const move=(checkId,direction)=>{const index=items.findIndex(c=>c.id===checkId);const target=items[index+direction];if(target)reorder(checkId,target.id)};return <section className="panel"><h3>체크리스트</h3><p className="minor">여행 전 준비와 여행 중 확인할 일을 나눠서 적으세요.</p><div className="phasebar"><button className={'phase '+(phase==='before'?'on':'')} onClick={()=>{setPhase('before');cancelEdit()}}>여행 전</button><button className={'phase '+(phase==='during'?'on':'')} onClick={()=>{setPhase('during');cancelEdit()}}>여행 중</button></div>{items.length?items.map((c,index)=><div key={c.id} className={'checkrow '+(dragId===c.id?'dragging':'')} draggable={editing!==c.id} onDragStart={()=>setDragId(c.id)} onDragEnd={()=>setDragId(null)} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();reorder(dragId,c.id);setDragId(null)}}>{editing===c.id?<><div className="checkedit"><input className="field" autoFocus value={editText} onChange={e=>setEditText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveEdit();if(e.key==='Escape')cancelEdit()}}/><div className="checkeditactions"><button className="savecheck" onClick={saveEdit}>저장</button><button onClick={cancelEdit}>취소</button></div></div></>:<><button className="checkhandle" type="button" aria-label="드래그해서 순서 이동" title="드래그해서 순서 이동">⋮⋮</button><label className={'check '+(c.done?'done':'')}><input type="checkbox" checked={c.done} onChange={e=>setTrip(t=>({...t,checklist:t.checklist.map(x=>x.id===c.id?{...x,done:e.target.checked}:x)}))}/><span>{c.text}</span></label><button className="checkmove" type="button" aria-label={`${c.text} 위로 이동`} title="위로 이동" disabled={index===0} onClick={()=>move(c.id,-1)}>↑</button><button className="checkmove" type="button" aria-label={`${c.text} 아래로 이동`} title="아래로 이동" disabled={index===items.length-1} onClick={()=>move(c.id,1)}>↓</button><button className="checkmove" type="button" aria-label={`${c.text} 수정`} title="수정" onClick={()=>startEdit(c)}>✎</button><button className="removecheck" type="button" aria-label={`${c.text} 삭제`} title="삭제" onClick={()=>remove(c.id)}>×</button></>}</div>):<div className="emptycheck">이 구분에 아직 체크 항목이 없습니다.</div>}<div className="addrow"><input className="field" value={newCheck} onChange={e=>setNewCheck(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')add()}} placeholder={phase==='before'?'여행 전에 준비할 것을 입력하세요':'여행 중 확인할 것을 입력하세요'}/><button className="dark" onClick={add}>추가</button></div></section>}
+
+Checklist=function ChecklistWithMultilineText({trip,setTrip,newCheck,setNewCheck}){
+  const[phase,setPhase]=useState('before');
+  const[editing,setEditing]=useState(null);
+  const[editText,setEditText]=useState('');
+  const[dragId,setDragId]=useState(null);
+  const items=trip.checklist.filter(c=>(c.phase||'before')===phase);
+  const add=()=>{
+    const text=newCheck.trim();
+    if(!text)return;
+    setTrip(t=>({...t,checklist:[...t.checklist,{id:id(),text,done:false,phase}]}));
+    setNewCheck('');
+  };
+  const remove=checkId=>setTrip(t=>({...t,checklist:t.checklist.filter(c=>c.id!==checkId)}));
+  const startEdit=c=>{setEditing(c.id);setEditText(c.text)};
+  const cancelEdit=()=>{setEditing(null);setEditText('')};
+  const saveEdit=()=>{
+    const text=editText.trim();
+    if(!editing||!text)return;
+    setTrip(t=>({...t,checklist:t.checklist.map(c=>c.id===editing?{...c,text}:c)}));
+    cancelEdit();
+  };
+  const reorder=(fromId,toId)=>{
+    if(!fromId||!toId||fromId===toId)return;
+    setTrip(t=>{
+      const phaseItems=t.checklist.filter(c=>(c.phase||'before')===phase);
+      const from=phaseItems.findIndex(c=>c.id===fromId);
+      const to=phaseItems.findIndex(c=>c.id===toId);
+      if(from<0||to<0)return t;
+      const reordered=[...phaseItems];
+      const[moved]=reordered.splice(from,1);
+      reordered.splice(to,0,moved);
+      let index=0;
+      return{...t,checklist:t.checklist.map(c=>(c.phase||'before')===phase?reordered[index++]:c)};
+    });
+  };
+  const move=(checkId,direction)=>{
+    const index=items.findIndex(c=>c.id===checkId);
+    const target=items[index+direction];
+    if(target)reorder(checkId,target.id);
+  };
+  return <section className="panel">
+    <h3>체크리스트</h3>
+    <p className="minor">여행 전 준비와 여행 중 확인할 일을 나눠서 적으세요. 항목 안에서는 줄바꿈도 사용할 수 있습니다.</p>
+    <div className="phasebar">
+      <button className={'phase '+(phase==='before'?'on':'')} onClick={()=>{setPhase('before');cancelEdit()}}>여행 전</button>
+      <button className={'phase '+(phase==='during'?'on':'')} onClick={()=>{setPhase('during');cancelEdit()}}>여행 중</button>
+    </div>
+    {items.length?items.map((c,index)=><div key={c.id} className={'checkrow '+(dragId===c.id?'dragging':'')} draggable={editing!==c.id} onDragStart={()=>setDragId(c.id)} onDragEnd={()=>setDragId(null)} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();reorder(dragId,c.id);setDragId(null)}}>
+      {editing===c.id?<div className="checkedit">
+        <textarea className="field" autoFocus value={editText} onChange={e=>setEditText(e.target.value)} onKeyDown={e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')saveEdit();if(e.key==='Escape')cancelEdit()}} aria-label="체크리스트 항목 수정" />
+        <div className="checkeditactions"><button className="savecheck" onClick={saveEdit}>저장</button><button onClick={cancelEdit}>취소</button></div>
+      </div>:<>
+        <button className="checkhandle" type="button" aria-label="드래그해서 순서 이동" title="드래그해서 순서 이동">⋮⋮</button>
+        <label className={'check '+(c.done?'done':'')}><input type="checkbox" checked={c.done} onChange={e=>setTrip(t=>({...t,checklist:t.checklist.map(x=>x.id===c.id?{...x,done:e.target.checked}:x)}))}/><span>{c.text}</span></label>
+        <button className="checkmove" type="button" aria-label={`${c.text} 위로 이동`} title="위로 이동" disabled={index===0} onClick={()=>move(c.id,-1)}>↑</button>
+        <button className="checkmove" type="button" aria-label={`${c.text} 아래로 이동`} title="아래로 이동" disabled={index===items.length-1} onClick={()=>move(c.id,1)}>↓</button>
+        <button className="checkmove" type="button" aria-label={`${c.text} 수정`} title="수정" onClick={()=>startEdit(c)}>✎</button>
+        <button className="removecheck" type="button" aria-label={`${c.text} 삭제`} title="삭제" onClick={()=>remove(c.id)}>×</button>
+      </>}
+    </div>):<div className="emptycheck">이 구분에 아직 체크 항목이 없습니다.</div>}
+    <div className="addrow">
+      <textarea className="area" rows="2" value={newCheck} onChange={e=>setNewCheck(e.target.value)} onKeyDown={e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter')add()}} placeholder={phase==='before'?'여행 전에 준비할 것을 입력하세요':'여행 중 확인할 것을 입력하세요'} aria-label="체크리스트 항목 추가" />
+      <button className="dark" onClick={add}>추가</button>
+    </div>
+  </section>;
+}
 
 function cloneData(value){return JSON.parse(JSON.stringify(value))}
 function withCoords(item){const coords=itemLatLng(item);if(!coords)return item;return {...item,lat:coords[0],lng:coords[1]}}
