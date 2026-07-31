@@ -453,6 +453,12 @@ const TimeSortedSchedule=Schedule;
 Schedule=function ScheduleWithTimeOrder(props){const cur={...props.cur,places:timeOrderedPlaces(props.cur.places)};return <TimeSortedSchedule {...props} cur={cur}/>}
 const TimeSortedRoute=Route;
 Route=function RouteWithTimeOrder(props){const trip={...props.trip,days:props.trip.days.map(day=>day.idx===Number(props.day)?{...day,places:timeOrderedPlaces(day.places)}:day)};return <TimeSortedRoute {...props} trip={trip}/>}
+const FinalJournal=Journal;
+Journal=function JournalWithFinalEditorFocus(props){
+  const host=useRef(null);
+  const focusEditor=()=>setTimeout(()=>host.current?.querySelector('.notelist + .panel')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+  return <div className="journal-view" ref={host} onClick={e=>{if(e.target.closest('button[aria-label="메모 작성"]'))focusEditor()}}><FinalJournal {...props}/></div>
+}
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
