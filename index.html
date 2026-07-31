@@ -58,6 +58,7 @@ h1{margin:14px 0 0;font-size:28px;line-height:1.02;letter-spacing:-1px}.meta{mar
 .journal-view{display:flex;flex-direction:column}
 .journal-view>.notelist{order:2}
 .journal-view>.notelist+.panel{order:1}
+.phrasegroups{display:grid;gap:12px}.phrasegroup{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.phrasegroup h4{margin:0 0 10px;font-size:16px}.phraseitems{display:grid;gap:8px}.phraseitem{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border-top:1px solid #f0eee8;padding-top:10px}.phraseitem:first-child{border-top:0;padding-top:0}.phrasecopy{min-width:0}.phrasezh{font-size:16px;font-weight:900;line-height:1.3}.phraseko{margin-top:3px;color:var(--muted);font-size:13px;line-height:1.35}.phrasepron{margin-top:3px;color:var(--accent);font-size:12px;line-height:1.35}.phrasecopybtn{min-width:52px;min-height:34px;border:1px solid var(--accentSoft);border-radius:10px;background:var(--accentSoft);color:var(--accent);font-size:12px;font-weight:850}
 </style>
 </head>
 <body>
@@ -459,6 +460,29 @@ Journal=function JournalWithFinalEditorFocus(props){
   const focusEditor=()=>setTimeout(()=>host.current?.querySelector('.notelist + .panel')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
   return <div className="journal-view" ref={host} onClick={e=>{if(e.target.closest('button[aria-label="메모 작성"]'))focusEditor()}}><FinalJournal {...props}/></div>
 }
+const phraseGroups=[
+  {id:'basic',label:'기본',items:[
+    ['你好','안녕하세요','니하오'],['謝謝','감사합니다','씨에씨에'],['不好意思','죄송합니다 / 실례합니다','부하오이쓰'],['洗手間在哪裡？','화장실이 어디예요?','시쇼우지엔 짜이 나리']
+  ]},
+  {id:'restaurant',label:'식당',items:[
+    ['大人四位，小孩一位','성인 4명, 아이 1명이요','따런 쓰웨이, 샤오하이 이웨이'],['有一位兩歲的小孩','2살 아이가 한 명 있어요','요우 이웨이 량쑤이 더 샤오하이'],['有加香菜嗎？','고수가 들어가나요?','요우 지아 샹차이 마'],['可以不要香菜嗎？','고수 빼고 주실 수 있나요?','커이 부야오 샹차이 마'],['內用，謝謝','먹고 갈게요','네이용, 씨에씨에'],['外帶，謝謝','포장할게요','와이다이, 씨에씨에'],['這個辣嗎？','이거 매운가요?','쩌거 라 마'],['請不要辣','안 맵게 해주세요','칭 부야오 라'],['請給我菜單','메뉴판 주세요','칭 게이워 차이단'],['買單，謝謝','계산해 주세요','마이단, 씨에씨에']
+  ]},
+  {id:'drink',label:'음료',items:[
+    ['少糖','당도 적게','샤오탕'],['無糖','무가당','우탕'],['少冰','얼음 적게','샤오빙'],['去冰','얼음 없이','취빙']
+  ]},
+  {id:'transport',label:'교통·숙소',items:[
+    ['請到這個地址','이 주소로 가주세요','칭 따오 쩌거 띠즈'],['大概要多久？','얼마나 걸리나요?','따까이 야오 뚜어지우'],['可以寄放行李嗎？','짐을 맡길 수 있나요?','커이 지팡 싱리 마'],['我要辦理入住','체크인하고 싶어요','워야오 반리 루주']
+  ]},
+  {id:'shopping',label:'쇼핑·결제',items:[
+    ['多少錢？','얼마예요?','뚜어샤오 치엔'],['可以刷卡嗎？','카드 결제 되나요?','커이 슈아카 마'],['可以退稅嗎？','택스 리펀드가 되나요?','커이 투이쉐이 마'],['請給我一個袋子','봉투 하나 주세요','칭 게이워 이거 따이즈']
+  ]}
+];
+function Phrases(){const[filter,setFilter]=useState('all');const[copied,setCopied]=useState('');const groups=filter==='all'?phraseGroups:phraseGroups.filter(group=>group.id===filter);const copy=async(item)=>{try{await navigator.clipboard.writeText(item[0]);setCopied(item[0]);setTimeout(()=>setCopied(''),1400)}catch{setCopied('복사 실패')}};return <><section className="panel"><div className="head" style={{margin:0}}><h3>여행 회화</h3></div><div className="filters" style={{marginTop:10}}><button className={'filter '+(filter==='all'?'on':'')} onClick={()=>setFilter('all')}>전체</button>{phraseGroups.map(group=><button key={group.id} className={'filter '+(filter===group.id?'on':'')} onClick={()=>setFilter(group.id)}>{group.label}</button>)}</div></section><div className="phrasegroups">{groups.map(group=><section className="phrasegroup" key={group.id}><h4>{group.label}</h4><div className="phraseitems">{group.items.map(item=><div className="phraseitem" key={item[0]}><div className="phrasecopy"><div className="phrasezh">{item[0]}</div><div className="phraseko">{item[1]}</div><div className="phrasepron">{item[2]}</div></div><button className="phrasecopybtn" onClick={()=>copy(item)}>{copied===item[0]?'완료':'복사'}</button></div>)}</div></section>)}</div></>}
+const RouteBackupForFuture=Route;
+window.__SORI_TRIP_ROUTE_BACKUP__=RouteBackupForFuture;
+Route=function RouteHiddenBehindPhrases(props){return <Phrases/>}
+const NavBeforePhrases=Nav;
+Nav=function NavWithPhrases(props){return props.id==='route'?<NavBeforePhrases {...props} label="회화" icon="文"/>:<NavBeforePhrases {...props}/>}
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
