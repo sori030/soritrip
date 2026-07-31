@@ -55,6 +55,9 @@ h1{margin:14px 0 0;font-size:28px;line-height:1.02;letter-spacing:-1px}.meta{mar
 .panel .head>button.icon[aria-label="메모 작성"]{width:40px;min-width:40px;height:40px;padding:0;border-radius:11px;background:var(--lime);color:var(--ink);font-size:0;font-weight:900;display:inline-grid;place-items:center;box-shadow:0 2px 8px rgba(76,61,170,.1)}
 .panel .head>button.icon[aria-label="메모 작성"]:after{content:'✎';font-size:18px;line-height:1;letter-spacing:0}
 .panel .head>button.icon[aria-label="메모 작성 닫기"]{width:44px;height:44px;background:var(--accentSoft);color:var(--accent);font-size:22px}
+.journal-view{display:flex;flex-direction:column}
+.journal-view>.notelist{order:2}
+.journal-view>.notelist+.panel{order:1}
 </style>
 </head>
 <body>
@@ -154,7 +157,7 @@ const ExistingJournal=Journal;
 Journal=function JournalWithEditorFocus(props){
   const host=useRef(null);
   const focusEditor=()=>setTimeout(()=>host.current?.querySelector('.notelist + .panel')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
-  return <div ref={host} onClick={e=>{if(e.target.closest('button[aria-label="메모 작성"]'))focusEditor()}}><ExistingJournal {...props}/></div>
+  return <div className="journal-view" ref={host} onClick={e=>{if(e.target.closest('button[aria-label="메모 작성"]'))focusEditor()}}><ExistingJournal {...props}/></div>
 }
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 */
